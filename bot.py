@@ -18,7 +18,7 @@ from models import Film
 
 
 
-TOKEN = '6388944404:AAFPoOODshR0jyO9A81Fpv5x1P2Dw14DxSY'
+TOKEN = 'Token'
 dp = Dispatcher()
 
 @dp.message(CommandStart())
