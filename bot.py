@@ -8,17 +8,20 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import Message, CallbackQuery, URLInputFile
+from aiogram.fsm.context import FSMContext
+from aiogram.fsm.state import State, StatesGroup
 
 
-from command import FILM_COMMAND, START_COMMAND, FILMS_BOT_COMMAND, START_BOT_COMMAND
-from data import get_films
+
+from command import FILM_CREATE_COMMAND, BOT_COMMAND, FILMS_COMMAND, START_COMMAND
+from data import get_films, add_film
 from keybords import film_keyboard_markup, FilmCallback
-from models import Film
+from models import Film, FilmForm
 
 
 
 
-TOKEN = 'Token'
+TOKEN = 'BOT_TOKEN'
 dp = Dispatcher()
 
 @dp.message(CommandStart())
@@ -28,7 +31,7 @@ async def start(message: Message) -> None:
 
 
 
-@dp.message(FILM_COMMAND)
+@dp.message(FILMS_COMMAND)
 async def films(message:Message):
     data = get_films()
     markup = film_keyboard_markup(film_list=data)
@@ -54,6 +57,49 @@ async def callb_film(callback: CallbackQuery, callback_data: FilmCallback):
             )
         )
 
+@dp.message(FILM_CREATE_COMMAND)
+async def film_create(message:Message, state:FSMContext) -> None:
+    await state.set_state(FilmForm.name)
+    await message.answer(f'Enter film name', reply_markup=ReplyKeyboardRemove())
+
+@dp.message(FilmForm.name)
+async def film_name(message: Message, state:FSMContext):
+    await state.update_data(name=message.text)
+    await state.set_state(FilmForm.description)
+
+@dp.message(FilmForm.description)
+async def film_description(message: Message, state:FSMContext):
+    await state.update_data(description=message.text)
+    await state.set_state(FilmForm.raiting)
+
+@dp.message(FilmForm.raiting)
+async def film_rating(message: Message, state:FSMContext):
+    await state.update_data(rating=message.text)
+    await state.set_state(FilmForm.genge)
+
+@dp.message(FilmForm.genge)
+async def film_ganre(message: Message, state:FSMContext):
+    await state.update_data(ganre=message.text)
+    await state.set_state(FilmForm.actors)
+
+@dp.message(FilmForm.actors)
+async def film_actors(message: Message, state:FSMContext):
+    await state.update_data(actors=message.text)
+    await state.set_state(FilmForm.poster)
+
+@dp.message(FilmForm.poster)
+async def film_poster(message: Message, state:FSMContext):
+    data = await state.update_data(poster=message.text)
+    film = Film(**data)
+    add_film(film.model_dump())
+    await state.clear()
+
+
+
+
+
+
+
 
 async def main():
     bot = Bot(
@@ -62,14 +108,8 @@ async def main():
         parse_mode=ParseMode.HTML,
         ),
     )
+    await bot.set_my_commands(BOT_COMMAND)
     await dp.start_polling(bot)
-    # await bot.set_my_commands(
-    #     [
-    #         FILMS_BOT_COMMAND,
-    #         START_BOT_COMMAND
-    #     ]
-    # )
-
 
 
 
